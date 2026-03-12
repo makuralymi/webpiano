@@ -72,15 +72,21 @@ body::after {
 /* ─── Controls bar ─────────────────────────────────── */
 #controls {
   height: var(--ctrl-h);
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  background: rgba(8, 3, 12, 0.52);
+  border-bottom: 1px solid rgba(255, 155, 232, 0.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  backdrop-filter: blur(18px) saturate(1.2);
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 0 18px;
   flex-shrink: 0;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .logo {
@@ -362,6 +368,44 @@ body::after {
   color: var(--text-dim);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.opacity-row {
+  align-items: center;
+  gap: 10px;
+}
+.opacity-row input[type=range] {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 3px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+.opacity-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+  cursor: pointer;
+}
+.opacity-row input[type=range]::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+#bg-opacity-display {
+  min-width: 36px;
+  font-size: 12px;
+  color: var(--accent);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 760px) {

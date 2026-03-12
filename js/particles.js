@@ -2,39 +2,71 @@
 //  particles.js  —  key-press burst particle system
 // ============================================================
 
+const _TRAIL_LEN = 7;
+
 class Particle {
   constructor(x, y, color, fast) {
-    this.x     = x;
-    this.y     = y;
-    const spd  = fast ? (3 + Math.random() * 6) : (2 + Math.random() * 4);
-    const ang  = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.85;
-    this.vx    = Math.cos(ang) * spd;
-    this.vy    = Math.sin(ang) * spd;
-    this.life  = 1.0;
-    this.decay = 0.025 + Math.random() * 0.025;
-    this.r     = 1.5 + Math.random() * 2.5;
-    this.color = color;
-    this.gravity = 0.12;
+    this.xBase  = x + (Math.random() - 0.5) * 10;
+    this.x      = this.xBase;
+    this.y      = y;
+    this.vy     = -(fast ? (1.8 + Math.random() * 2.2) : (0.8 + Math.random() * 1.4));
+    this.vxBase = (Math.random() - 0.5) * 0.3;
+    this.life   = 1.0;
+    this.decay  = 0.007 + Math.random() * 0.008;
+    this.r      = 2 + Math.random() * 3.0;
+    this.color  = color;
+    this.amp    = 3 + Math.random() * 8;
+    this.freq   = 0.04 + Math.random() * 0.04;
+    this.phase  = Math.random() * Math.PI * 2;
+    this.age    = 0;
+    // Ring buffer — avoids shift() O(n) copies
+    this._tx    = new Float32Array(_TRAIL_LEN);
+    this._ty    = new Float32Array(_TRAIL_LEN);
+    this._th    = 0;   // write head
+    this._tc    = 0;   // filled count
   }
 
   update() {
-    this.x    += this.vx;
-    this.y    += this.vy;
-    this.vy   += this.gravity;
-    this.vx   *= 0.98;
-    this.life -= this.decay;
+    // Record current position into ring buffer before moving
+    this._tx[this._th] = this.x;
+    this._ty[this._th] = this.y;
+    this._th = (this._th + 1) % _TRAIL_LEN;
+    if (this._tc < _TRAIL_LEN) this._tc++;
+
+    this.age   += 1;
+    this.xBase += this.vxBase;
+    this.x      = this.xBase + Math.sin(this.age * this.freq + this.phase) * this.amp;
+    this.y     += this.vy;
+    this.vy    *= 0.997;
+    this.life  -= this.decay;
   }
 
-  draw(ctx) {
-    ctx.save();
+  // Draw tail as a single path — no shadowBlur (called in a batched pass)
+  drawTail(ctx) {
+    if (this._tc < 2) return;
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth   = this.r * 0.5;
+    ctx.globalAlpha = this.life * 0.45;
+    // Walk ring buffer oldest → newest
+    const start = (this._th - this._tc + _TRAIL_LEN) % _TRAIL_LEN;
+    ctx.beginPath();
+    ctx.moveTo(this._tx[start], this._ty[start]);
+    for (let i = 1; i < this._tc; i++) {
+      const idx = (start + i) % _TRAIL_LEN;
+      ctx.lineTo(this._tx[idx], this._ty[idx]);
+    }
+    ctx.lineTo(this.x, this.y);
+    ctx.stroke();
+  }
+
+  // Draw glowing head dot (called in a separate batched pass with shadowBlur set)
+  drawHead(ctx) {
     ctx.globalAlpha = Math.max(0, this.life);
+    ctx.fillStyle   = this.life > 0.6 ? '#ffffff' : this.color;
     ctx.shadowColor = this.color;
-    ctx.shadowBlur  = 6;
-    ctx.fillStyle   = this.color;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.r * this.life, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
   }
 }
 
@@ -42,35 +74,33 @@ class Particle {
 
 class SmokeParticle {
   constructor(x, y, color) {
-    this.x     = x + (Math.random() - 0.5) * 18;
+    this.x     = x + (Math.random() - 0.5) * 22;
     this.y     = y;
-    this.vx    = (Math.random() - 0.5) * 0.55;
-    this.vy    = -(0.45 + Math.random() * 0.85);
-    this.r     = 5 + Math.random() * 7;
+    this.vx    = (Math.random() - 0.5) * 0.7;
+    this.vy    = -(0.5 + Math.random() * 1.1);
+    this.r     = 7 + Math.random() * 10;
     this.life  = 1.0;
-    this.decay = 0.007 + Math.random() * 0.007;
+    this.decay = 0.006 + Math.random() * 0.006;
     this.color = color;
   }
 
   update() {
     this.x    += this.vx + (Math.random() - 0.5) * 0.28;
     this.y    += this.vy;
-    this.vy   *= 0.992;   // gentle deceleration
-    this.r    += 0.20;    // expand as it drifts up
+    this.vy   *= 0.992;
+    this.r    += 0.28;
     this.life -= this.decay;
   }
 
+  // No save/restore — called inside a batched smoke pass
   draw(ctx) {
     if (this.life <= 0) return;
-    ctx.save();
-    ctx.globalAlpha = Math.max(0, this.life * this.life * 0.11);
+    ctx.globalAlpha = this.life * this.life * 0.14;
     ctx.shadowColor = this.color;
-    ctx.shadowBlur  = this.r * 2.6;
     ctx.fillStyle   = this.color;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
   }
 }
 
@@ -82,15 +112,13 @@ class ParticleSystem {
     this._smoke     = [];
   }
 
-  // Emit a burst from the top‑edge of a piano key
-  burst(x, y, colors, count = 22) {
+  burst(x, y, colors, count = 28) {
     for (let i = 0; i < count; i++) {
       const c = colors[Math.floor(Math.random() * colors.length)];
-      this._particles.push(new Particle(x, y, c, i < 6));
+      this._particles.push(new Particle(x, y, c, i < 8));
     }
   }
 
-  // Emit a slow smoke cloud from a key press
   smokeBurst(x, y, color, count = 7) {
     for (let i = 0; i < count; i++)
       this._smoke.push(new SmokeParticle(x, y, color));
@@ -108,9 +136,31 @@ class ParticleSystem {
   }
 
   draw(ctx) {
-    // Smoke drawn first (behind sparks)
-    for (const s of this._smoke) s.draw(ctx);
-    for (const p of this._particles) p.draw(ctx);
+    if (this._smoke.length === 0 && this._particles.length === 0) return;
+
+    // ── Pass 1: Smoke (fixed shadowBlur, no per-particle save/restore) ──
+    if (this._smoke.length > 0) {
+      ctx.save();
+      ctx.shadowBlur = 28;
+      for (const s of this._smoke) s.draw(ctx);
+      ctx.restore();
+    }
+
+    if (this._particles.length === 0) return;
+
+    // ── Pass 2: Tails — no shadowBlur (most expensive to skip) ──
+    ctx.save();
+    ctx.shadowBlur = 0;
+    ctx.lineCap    = 'round';
+    ctx.lineJoin   = 'round';
+    for (const p of this._particles) p.drawTail(ctx);
+    ctx.restore();
+
+    // ── Pass 3: Glowing heads ────────────────────────────────
+    ctx.save();
+    ctx.shadowBlur = 14;
+    for (const p of this._particles) p.drawHead(ctx);
+    ctx.restore();
   }
 
   clear() { this._particles = []; this._smoke = []; }

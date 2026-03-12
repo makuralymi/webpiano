@@ -62,7 +62,7 @@ class KeyboardLayout {
   tickGlow(dt) {
     for (const k of this._keys) {
       if (!k.pressColor && k.glowAlpha > 0) {
-        k.glowAlpha = Math.max(0, k.glowAlpha - dt * 3.5);
+        k.glowAlpha = Math.max(0, k.glowAlpha - dt * 2.2);
       }
     }
   }
@@ -91,21 +91,22 @@ const KeyboardRenderer = {
       if (k.pressColor) {
         // Pressed
         const grad = ctx.createLinearGradient(x, y, x, y + h);
-        grad.addColorStop(0, k.pressColor);
-        grad.addColorStop(0.4, 'rgba(255,255,255,0.3)');
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.15, k.pressColor);
+        grad.addColorStop(0.5, 'rgba(255,255,255,0.25)');
         grad.addColorStop(1,   '#111');
         ctx.fillStyle = grad;
         ctx.shadowColor = k.pressColor;
-        ctx.shadowBlur  = 22;
+        ctx.shadowBlur  = 32;
       } else if (k.glowAlpha > 0.01) {
         // Fading glow after release
         const grad = ctx.createLinearGradient(x, y, x, y + h);
         const c    = k.lastColor;
-        grad.addColorStop(0, `rgba(255,255,255,${0.85 * k.glowAlpha})`);
+        grad.addColorStop(0, `rgba(255,255,255,${0.90 * k.glowAlpha})`);
         grad.addColorStop(1, CONSTANTS.KEY_WHITE_BOT);
         ctx.fillStyle   = grad;
         ctx.shadowColor = c;
-        ctx.shadowBlur  = 18 * k.glowAlpha;
+        ctx.shadowBlur  = 28 * k.glowAlpha;
       } else {
         // Rest state
         const grad = ctx.createLinearGradient(x, y, x, y + h);
@@ -135,12 +136,12 @@ const KeyboardRenderer = {
       if (k.pressColor) {
         ctx.fillStyle   = k.pressColor;
         ctx.shadowColor = k.pressColor;
-        ctx.shadowBlur  = 20;
+        ctx.shadowBlur  = 30;
       } else if (k.glowAlpha > 0.01) {
         const a = k.glowAlpha;
         ctx.fillStyle   = `rgba(40,40,50,1)`;
         ctx.shadowColor = k.lastColor;
-        ctx.shadowBlur  = 14 * a;
+        ctx.shadowBlur  = 22 * a;
       } else {
         const grad = ctx.createLinearGradient(x, y, x, y + h);
         grad.addColorStop(0,   CONSTANTS.KEY_BLACK);

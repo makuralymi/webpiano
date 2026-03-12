@@ -425,26 +425,39 @@ const WaterfallRenderer = {
     // ── Impact line (glowing edge between waterfall and keyboard) ──
     const lineGrad = ctx.createLinearGradient(0, 0, canvasW, 0);
     lineGrad.addColorStop(0,    'rgba(0,212,255,0)');
-    lineGrad.addColorStop(0.12, 'rgba(0,212,255,0.80)');
+    lineGrad.addColorStop(0.12, 'rgba(0,212,255,0.95)');
     lineGrad.addColorStop(0.5,  'rgba(255,255,255,1.0)');
-    lineGrad.addColorStop(0.88, 'rgba(255,63,128,0.80)');
+    lineGrad.addColorStop(0.88, 'rgba(255,63,128,0.95)');
     lineGrad.addColorStop(1,    'rgba(255,63,128,0)');
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,255,255,0.9)';
+    ctx.shadowBlur  = 12;
     ctx.fillStyle = lineGrad;
-    ctx.fillRect(0, keyboardY - 2, canvasW, 3);
+    ctx.fillRect(0, keyboardY - 2, canvasW, 5);
+    ctx.restore();
 
     // Bright core line
-    ctx.globalAlpha = 0.55;
-    ctx.fillStyle   = 'rgba(255,255,255,0.9)';
-    ctx.fillRect(canvasW * 0.08, keyboardY - 1, canvasW * 0.84, 1);
+    ctx.globalAlpha = 0.88;
+    ctx.fillStyle   = 'rgba(255,255,255,1.0)';
+    ctx.fillRect(canvasW * 0.06, keyboardY - 1, canvasW * 0.88, 1);
     ctx.globalAlpha = 1;
 
     // Ambient glow above keyboard (taller, softer)
-    const ambGrad = ctx.createLinearGradient(0, keyboardY - 50, 0, keyboardY);
+    const ambGrad = ctx.createLinearGradient(0, keyboardY - 80, 0, keyboardY);
     ambGrad.addColorStop(0,   'rgba(0,212,255,0)');
-    ambGrad.addColorStop(0.6, 'rgba(0,212,255,0.04)');
-    ambGrad.addColorStop(1,   'rgba(255,255,255,0.09)');
+    ambGrad.addColorStop(0.5, 'rgba(0,212,255,0.06)');
+    ambGrad.addColorStop(0.8, 'rgba(120,80,255,0.08)');
+    ambGrad.addColorStop(1,   'rgba(255,255,255,0.18)');
     ctx.fillStyle = ambGrad;
-    ctx.fillRect(0, keyboardY - 50, canvasW, 50);
+    ctx.fillRect(0, keyboardY - 80, canvasW, 80);
+
+    // Extra wide soft halo right at keyboardY
+    const haloGrad = ctx.createLinearGradient(0, keyboardY - 24, 0, keyboardY + 4);
+    haloGrad.addColorStop(0,   'rgba(255,255,255,0)');
+    haloGrad.addColorStop(0.6, 'rgba(200,160,255,0.06)');
+    haloGrad.addColorStop(1,   'rgba(255,255,255,0.12)');
+    ctx.fillStyle = haloGrad;
+    ctx.fillRect(0, keyboardY - 24, canvasW, 28);
   },
 
   // Draw keyboard background + shelf
@@ -455,7 +468,10 @@ const WaterfallRenderer = {
       const scale = Math.max(canvasW / bgImg.naturalWidth, canvasH / bgImg.naturalHeight);
       const dw = bgImg.naturalWidth * scale;
       const dh = bgImg.naturalHeight * scale;
+      ctx.save();
+      ctx.globalAlpha = typeof window.BG_OPACITY === 'number' ? window.BG_OPACITY : 0.9;
       ctx.drawImage(bgImg, (canvasW - dw) / 2, (canvasH - dh) / 2, dw, dh);
+      ctx.restore();
       // Darker tint over the keyboard area so keys remain readable
       ctx.fillStyle = 'rgba(12, 12, 20, 0.88)';
     } else {

@@ -28,6 +28,8 @@ const btnBgApplyFile = document.getElementById('btn-bg-apply-file');
 const btnBgClear  = document.getElementById('btn-bg-clear');
 const bgUrlInput  = document.getElementById('bg-url');
 const bgFileInput = document.getElementById('bg-file');
+const bgOpacitySlider  = document.getElementById('bg-opacity');
+const bgOpacityDisplay = document.getElementById('bg-opacity-display');
 const btnToggleGrid  = document.getElementById('btn-toggle-grid');
 const btnTrackColors = document.getElementById('btn-track-colors');
 const tcModal     = document.getElementById('track-colors-modal');
@@ -41,7 +43,8 @@ const BG_DB_STORE = 'images';
 const BG_DB_KEY = 'active';
 
 let _activeBgObjectUrl = null;
-window.BG_IMAGE = null;
+window.BG_IMAGE  = null;
+window.BG_OPACITY = parseFloat(localStorage.getItem('webpiano.bgOpacity') ?? '0.9');
 window.SHOW_GRID = localStorage.getItem('webpiano.showGrid') !== 'false';
 
 // ── State ────────────────────────────────────────────────────
@@ -119,6 +122,13 @@ resize();
 restoreBackgroundState().catch(() => {
   localStorage.removeItem(BG_STORE_KEY);
 });
+
+// Auto-load default MIDI on startup
+const DEFAULT_MIDI = '【鸣潮】3.1 OST 我与你.mid';
+fetch(DEFAULT_MIDI)
+  .then(r => { if (!r.ok) throw new Error('default midi not found'); return r.arrayBuffer(); })
+  .then(buf => { if (!midiData) loadMidi(buf, DEFAULT_MIDI); })
+  .catch(() => {});
 
 // ── Helpers ──────────────────────────────────────────────────
 function trackColor(idx) {
@@ -479,8 +489,8 @@ player.onNoteOn = (midi, velocity, trackIdx) => {
   if (key) {
     const cx = key.x + key.w / 2;
     const cy = keyboardY + (key.isBlack ? 4 : 6);
-    particles.burst(cx, cy, [tc.fill, '#ffffff', 'rgba(255,255,255,0.6)'], 20);
-    particles.smokeBurst(cx, cy, tc.fill, 6);
+    particles.burst(cx, cy, [tc.fill, '#ffffff', tc.fill, 'rgba(255,255,255,0.8)'], 20);
+    particles.smokeBurst(cx, cy, tc.fill, 7);
   }
 };
 
@@ -511,7 +521,7 @@ const kbInput = new KeyboardInput(
     if (key) {
       const cx = key.x + key.w / 2;
       const cy = keyboardY + (key.isBlack ? 4 : 6);
-      particles.burst(cx, cy, [tc.fill, '#ffffff'], 16);
+      particles.burst(cx, cy, [tc.fill, '#ffffff', tc.fill], 16);
       particles.smokeBurst(cx, cy, tc.fill, 5);
     }
   },
@@ -533,6 +543,19 @@ btnToggleGrid.addEventListener('click', () => {
   window.SHOW_GRID = !window.SHOW_GRID;
   localStorage.setItem('webpiano.showGrid', window.SHOW_GRID);
   btnToggleGrid.classList.toggle('active', window.SHOW_GRID);
+});
+
+// Background opacity slider — sync initial state from persisted value
+(function syncOpacityUI() {
+  const pct = Math.round(window.BG_OPACITY * 100);
+  bgOpacitySlider.value   = pct;
+  bgOpacityDisplay.textContent = pct + '%';
+})();
+bgOpacitySlider.addEventListener('input', () => {
+  const pct = parseInt(bgOpacitySlider.value, 10);
+  window.BG_OPACITY = pct / 100;
+  bgOpacityDisplay.textContent = pct + '%';
+  localStorage.setItem('webpiano.bgOpacity', window.BG_OPACITY);
 });
 
 // Track colors modal
