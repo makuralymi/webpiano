@@ -1,0 +1,6 @@
+# FL Studio samples – kept local only (copyright, 13MB)
+samples/
+
+# OS files
+.DS_Store
+Thumbs.db

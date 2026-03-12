@@ -1,0 +1,275 @@
+/* ======================================================
+   WebPiano — Ember-inspired dark theme
+   ====================================================== */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:          #09090f;
+  --surface:     #111120;
+  --surface2:    #181830;
+  --border:      #252545;
+  --text:        #b8b8d0;
+  --text-dim:    #5a5a80;
+  --accent:      #ff8c00;
+  --accent-glow: rgba(255,140,0,0.35);
+  --ctrl-h:      50px;
+  --prog-h:      4px;
+  --hint-h:      26px;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ─── Controls bar ─────────────────────────────────── */
+#controls {
+  height: var(--ctrl-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 18px;
+  flex-shrink: 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+}
+.logo-icon {
+  font-size: 22px;
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+.logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: linear-gradient(90deg, #ff8c00, #ffcc55);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* General button */
+.btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: #1e1e38;
+  border-color: var(--accent);
+}
+.btn:active {
+  background: #252545;
+}
+.btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+.btn-accent {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn-accent:hover {
+  background: rgba(255,140,0,0.12);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* Transport icon buttons */
+.btn-icon {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn-icon.playing {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* Slider group */
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.slider-group input[type=range] {
+  -webkit-appearance: none;
+  width: 90px;
+  height: 3px;
+  background: var(--border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+.slider-group input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+  cursor: pointer;
+}
+.slider-group input[type=range]::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+#speed-display {
+  min-width: 32px;
+  font-size: 11px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Song info */
+#song-info {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+#song-title {
+  color: var(--text-dim);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#song-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  min-width: 70px;
+  text-align: right;
+}
+
+/* ─── Progress track ────────────────────────────────── */
+#progress-track {
+  height: var(--prog-h);
+  background: var(--surface2);
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+#progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ff8c00, #ffcc55);
+  transition: width 0.1s linear;
+  pointer-events: none;
+}
+#progress-cursor {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+#progress-track:hover #progress-cursor { opacity: 1; }
+
+/* ─── Main canvas ─────────────────────────────────── */
+#main-canvas {
+  flex: 1;
+  display: block;
+  width: 100%;
+  /* height auto from flex */
+}
+
+/* ─── Keyboard hint ─────────────────────────────────── */
+#kb-hint {
+  height: var(--hint-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+/* ─── File import drag overlay ─────────────────────── */
+#drag-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(9,9,15,0.88);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 20px;
+  color: var(--accent);
+  border: 2px dashed var(--accent);
+  pointer-events: none;
+}
+#drag-overlay.active { display: flex; }
+#drag-overlay .drag-icon { font-size: 48px; }
+
+/* ─── Track legend ──────────────────────────────────── */
+#track-legend {
+  position: absolute;
+  top: calc(var(--ctrl-h) + var(--prog-h) + 10px);
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  z-index: 10;
+  pointer-events: none;
+}
+.track-dot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.track-dot-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
