@@ -54,6 +54,7 @@ let lastTime   = performance.now();
 
 let trackColorMap = new Map();   // trackIndex → {fill, glow}
 let midiData      = null;        // parsed midi
+const _activeNotes = new Map();  // midi → {color, key, carry}
 
 // ── Sub‑systems ──────────────────────────────────────────────
 const audio     = new AudioEngine();
@@ -484,22 +485,24 @@ player.onNoteOn = (midi, velocity, trackIdx) => {
   const tc  = noteColor(midi, trackIdx);
   layout.press(midi, tc.fill);
 
-  // Particle burst at key top
   const key = layout.getKey(midi);
   if (key) {
     const cx = key.x + key.w / 2;
     const cy = keyboardY + (key.isBlack ? 4 : 6);
-    particles.burst(cx, cy, [tc.fill, '#ffffff', tc.fill, 'rgba(255,255,255,0.8)'], 20);
-    particles.smokeBurst(cx, cy, tc.fill, 7);
+    particles.burst(cx, cy, [tc.fill, '#ffffff', tc.fill, 'rgba(255,255,255,0.8)'], 12);
+    particles.smokeBurst(cx, cy, tc.fill, 4);
+    _activeNotes.set(midi, { color: tc.fill, key, carry: 0 });
   }
 };
 
 player.onNoteOff = (midi) => {
   layout.release(midi);
+  _activeNotes.delete(midi);
 };
 
 player.onEnded = () => {
   setPlayIcon(false);
+  _activeNotes.clear();
 };
 
 player.onTick = (t) => {
@@ -521,13 +524,15 @@ const kbInput = new KeyboardInput(
     if (key) {
       const cx = key.x + key.w / 2;
       const cy = keyboardY + (key.isBlack ? 4 : 6);
-      particles.burst(cx, cy, [tc.fill, '#ffffff', tc.fill], 16);
-      particles.smokeBurst(cx, cy, tc.fill, 5);
+      particles.burst(cx, cy, [tc.fill, '#ffffff', tc.fill], 12);
+      particles.smokeBurst(cx, cy, tc.fill, 4);
+      _activeNotes.set(midi, { color: tc.fill, key, carry: 0 });
     }
   },
   (midi) => {
     audio.noteOff(midi, null);
     layout.release(midi);
+    _activeNotes.delete(midi);
   }
 );
 
@@ -658,6 +663,7 @@ btnStop.addEventListener('click', () => {
   songTime.textContent  = midiData ? `0:00 / ${fmtTime(midiData.durationSec)}` : '';
   layout && clearAllKeys();
   particles.clear();
+  _activeNotes.clear();
 });
 
 function clearAllKeys() {
@@ -685,6 +691,7 @@ progTrack.addEventListener('click', e => {
   const wasPlaying = player.state === 'playing';
   player.stop();
   clearAllKeys();
+  _activeNotes.clear();
   if (wasPlaying) {
     player.play(seek);
     setPlayIcon(true);
@@ -718,6 +725,17 @@ function loop(now) {
 
   // Tick glow decay
   layout.tickGlow(dt);
+
+  // Continuous particle emission for held notes
+  for (const note of _activeNotes.values()) {
+    note.carry += 0.9 * dt * 60;
+    while (note.carry >= 1) {
+      note.carry -= 1;
+      const cx = note.key.x + note.key.w / 2;
+      const cy = keyboardY + (note.key.isBlack ? 4 : 6);
+      particles.burst(cx, cy, [note.color, '#ffffff', note.color], 1);
+    }
+  }
 
   const t = player.songTime;
 

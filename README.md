@@ -147,11 +147,7 @@ Close Grand 88.ogg   ← MIDI 108（C8，最高音）
 
 加载时若成功读取 **≥ 80 个**文件则视为本地音源有效，跳过 CDN。
 
-#### 从 FL Studio 导出采样
 
-1. FL Studio → `CHANNEL RACK` 选中 Close Grand 插件 → 右键 → **Export as audio clip**
-2. 格式选 **OGG**，逐键导出，或使用脚本批量渲染
-3. 按上述命名规则重命名后放入 `samples_ogg/`
 
 #### 使用其他音色库
 
