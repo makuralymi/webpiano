@@ -224,15 +224,24 @@ const WaterfallRenderer = {
     const waterfallH = keyboardY;   // waterfall fills from y=0 to keyboardY
 
     // ── Background ──────────────────────────────────────────
-    // Clear the canvas so the CSS body background (custom image) can show through
-    ctx.clearRect(0, 0, canvasW, waterfallH);
-    
-    // Draw a subtle semi-transparent dark gradient overlaid on the background 
+    // Background image is drawn in drawBackground(); only clear when no image.
+    const _hasBgImg = window.BG_IMAGE && window.BG_IMAGE.complete && window.BG_IMAGE.naturalWidth > 0;
+    if (!_hasBgImg) {
+      ctx.clearRect(0, 0, canvasW, waterfallH);
+    }
+
+    // Draw a subtle semi-transparent dark gradient overlaid on the background
     // to ensure the bright piano notes and particles still pop visually
     const bgGrad = ctx.createLinearGradient(0, 0, 0, waterfallH);
-    bgGrad.addColorStop(0,   'rgba(8, 8, 14, 0.5)');
-    bgGrad.addColorStop(0.6, 'rgba(10, 10, 20, 0.6)');
-    bgGrad.addColorStop(1,   'rgba(13, 13, 26, 0.8)');
+    if (_hasBgImg) {
+      bgGrad.addColorStop(0,   'rgba(8, 8, 14, 0.28)');
+      bgGrad.addColorStop(0.6, 'rgba(10, 10, 20, 0.38)');
+      bgGrad.addColorStop(1,   'rgba(13, 13, 26, 0.55)');
+    } else {
+      bgGrad.addColorStop(0,   'rgba(8, 8, 14, 0.5)');
+      bgGrad.addColorStop(0.6, 'rgba(10, 10, 20, 0.6)');
+      bgGrad.addColorStop(1,   'rgba(13, 13, 26, 0.8)');
+    }
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, canvasW, waterfallH);
 
@@ -438,7 +447,18 @@ const WaterfallRenderer = {
 
   // Draw keyboard background + shelf
   drawBackground(ctx, keyboardY, canvasW, canvasH) {
-    ctx.fillStyle = '#0c0c14';
+    const bgImg = window.BG_IMAGE;
+    if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+      // Scale to cover the full canvas
+      const scale = Math.max(canvasW / bgImg.naturalWidth, canvasH / bgImg.naturalHeight);
+      const dw = bgImg.naturalWidth * scale;
+      const dh = bgImg.naturalHeight * scale;
+      ctx.drawImage(bgImg, (canvasW - dw) / 2, (canvasH - dh) / 2, dw, dh);
+      // Darker tint over the keyboard area so keys remain readable
+      ctx.fillStyle = 'rgba(12, 12, 20, 0.88)';
+    } else {
+      ctx.fillStyle = '#0c0c14';
+    }
     ctx.fillRect(0, keyboardY, canvasW, canvasH - keyboardY);
   },
 };

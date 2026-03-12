@@ -35,6 +35,7 @@ const BG_DB_STORE = 'images';
 const BG_DB_KEY = 'active';
 
 let _activeBgObjectUrl = null;
+window.BG_IMAGE = null;
 
 // ── State ────────────────────────────────────────────────────
 let layout     = null;
@@ -139,6 +140,9 @@ function applyCustomBackground(imageSrc) {
   }
   document.documentElement.style.setProperty('--custom-bg-image', `url("${escapeCssUrl(imageSrc)}")`);
   document.body.classList.add('has-custom-bg');
+  const img = new Image();
+  img.src = imageSrc;
+  window.BG_IMAGE = img;
 }
 
 function applyCustomBackgroundBlob(blob) {
@@ -149,6 +153,9 @@ function applyCustomBackgroundBlob(blob) {
   _activeBgObjectUrl = URL.createObjectURL(blob);
   document.documentElement.style.setProperty('--custom-bg-image', `url("${escapeCssUrl(_activeBgObjectUrl)}")`);
   document.body.classList.add('has-custom-bg');
+  const img = new Image();
+  img.src = _activeBgObjectUrl;
+  window.BG_IMAGE = img;
 }
 
 function clearCustomBackgroundVisual() {
@@ -158,6 +165,7 @@ function clearCustomBackgroundVisual() {
   }
   document.documentElement.style.setProperty('--custom-bg-image', 'none');
   document.body.classList.remove('has-custom-bg');
+  window.BG_IMAGE = null;
 }
 
 function readLocalImageAsDataURL(file) {
