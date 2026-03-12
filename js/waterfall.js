@@ -224,10 +224,15 @@ const WaterfallRenderer = {
     const waterfallH = keyboardY;   // waterfall fills from y=0 to keyboardY
 
     // ── Background ──────────────────────────────────────────
+    // Clear the canvas so the CSS body background (custom image) can show through
+    ctx.clearRect(0, 0, canvasW, waterfallH);
+    
+    // Draw a subtle semi-transparent dark gradient overlaid on the background 
+    // to ensure the bright piano notes and particles still pop visually
     const bgGrad = ctx.createLinearGradient(0, 0, 0, waterfallH);
-    bgGrad.addColorStop(0,   '#08080e');
-    bgGrad.addColorStop(0.6, '#0a0a14');
-    bgGrad.addColorStop(1,   '#0d0d1a');
+    bgGrad.addColorStop(0,   'rgba(8, 8, 14, 0.5)');
+    bgGrad.addColorStop(0.6, 'rgba(10, 10, 20, 0.6)');
+    bgGrad.addColorStop(1,   'rgba(13, 13, 26, 0.8)');
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, canvasW, waterfallH);
 

@@ -297,14 +297,23 @@ async function applyBackgroundFromFile() {
     return;
   }
 
-  applyCustomBackgroundBlob(file);
-  await putCachedBackgroundBlob(file);
-  saveBackgroundState({
-    kind: 'file-blob',
-    filename: file.name,
-    cachedAt: Date.now(),
-  });
-  closeBgModal();
+  try {
+    // Convert File to pure Blob to avoid DataCloneError in IndexedDB
+    const buffer = await file.arrayBuffer();
+    const pureBlob = new Blob([buffer], { type: file.type });
+    
+    applyCustomBackgroundBlob(pureBlob);
+    await putCachedBackgroundBlob(pureBlob);
+    
+    saveBackgroundState({
+      kind: 'file-blob',
+      filename: file.name,
+      cachedAt: Date.now(),
+    });
+    closeBgModal();
+  } catch (e) {
+    alert('应用背景图失败: ' + (e.message || '未知错误'));
+  }
 }
 
 async function clearBackgroundSetting() {
