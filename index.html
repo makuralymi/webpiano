@@ -21,6 +21,8 @@
           <input id="file-input" type="file" accept=".mid,.midi" style="display:none">
         </button>
         <button id="btn-bg" class="btn">背景设置</button>
+        <button id="btn-toggle-grid" class="btn active" title="显示/隐藏小节线">小节线</button>
+        <button id="btn-track-colors" class="btn" title="自定义轨道颜色" disabled>轨道颜色</button>
       </div>
 
       <div class="control-group transport">
@@ -90,6 +92,22 @@
 
       <div class="modal-footer">
         <button id="btn-bg-clear" class="btn">恢复默认</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="track-colors-modal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" data-close="1"></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="tc-modal-title">
+      <div class="modal-header">
+        <h2 id="tc-modal-title">轨道颜色</h2>
+        <button id="btn-tc-close" class="btn btn-icon" title="关闭">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+        </button>
+      </div>
+      <div id="tc-modal-body" class="modal-body"></div>
+      <div class="modal-footer">
+        <button id="btn-tc-reset" class="btn">重置默认颜色</button>
       </div>
     </div>
   </div>

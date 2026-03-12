@@ -28,6 +28,12 @@ const btnBgApplyFile = document.getElementById('btn-bg-apply-file');
 const btnBgClear  = document.getElementById('btn-bg-clear');
 const bgUrlInput  = document.getElementById('bg-url');
 const bgFileInput = document.getElementById('bg-file');
+const btnToggleGrid  = document.getElementById('btn-toggle-grid');
+const btnTrackColors = document.getElementById('btn-track-colors');
+const tcModal     = document.getElementById('track-colors-modal');
+const tcModalBody = document.getElementById('tc-modal-body');
+const btnTcClose  = document.getElementById('btn-tc-close');
+const btnTcReset  = document.getElementById('btn-tc-reset');
 
 const BG_STORE_KEY = 'webpiano.customBackground.v1';
 const BG_DB_NAME = 'webpiano.backgroundCache';
@@ -36,6 +42,7 @@ const BG_DB_KEY = 'active';
 
 let _activeBgObjectUrl = null;
 window.BG_IMAGE = null;
+window.SHOW_GRID = localStorage.getItem('webpiano.showGrid') !== 'false';
 
 // ── State ────────────────────────────────────────────────────
 let layout     = null;
@@ -378,6 +385,88 @@ function rebuildLegend() {
     div.innerHTML = `<div class="track-dot-swatch" style="background:${tc.fill};box-shadow:0 0 4px ${tc.fill}"></div>${name}`;
     el.appendChild(div);
   }
+  btnTrackColors.disabled = false;
+}
+
+// ── Track colors modal ────────────────────────────────
+
+function _hexFromFill(fill) {
+  const m = fill.match(/^#[0-9a-f]{6}$/i);
+  return m ? fill : '#ffffff';
+}
+
+function _glowFromHex(hex) {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},0.85)`;
+}
+
+function openTrackColorsModal() {
+  tcModalBody.innerHTML = '';
+  for (const [tIdx, tc] of trackColorMap) {
+    const name = (midiData.trackNames && midiData.trackNames[tIdx]) || `轨道 ${tIdx + 1}`;
+    const hex  = _hexFromFill(tc.fill);
+
+    const row = document.createElement('div');
+    row.className = 'tc-row';
+
+    // Color swatch + hidden input
+    const wrap = document.createElement('div');
+    wrap.className = 'tc-swatch-wrap';
+    wrap.style.background = hex;
+
+    const picker = document.createElement('input');
+    picker.type  = 'color';
+    picker.value = hex;
+    picker.title = '点击选色';
+    picker.addEventListener('input', () => {
+      const newHex = picker.value;
+      wrap.style.background = newHex;
+      hexLabel.textContent  = newHex.toUpperCase();
+      trackColorMap.set(tIdx, { fill: newHex, glow: _glowFromHex(newHex) });
+      // sync legend swatch
+      const swatches = document.querySelectorAll('#track-legend .track-dot-swatch');
+      let i = 0;
+      for (const [k] of trackColorMap) {
+        if (k === tIdx && swatches[i]) {
+          swatches[i].style.background = newHex;
+          swatches[i].style.boxShadow  = `0 0 4px ${newHex}`;
+        }
+        i++;
+      }
+    });
+    wrap.appendChild(picker);
+
+    const label = document.createElement('span');
+    label.className = 'tc-name';
+    label.textContent = name;
+
+    const hexLabel = document.createElement('span');
+    hexLabel.className = 'tc-hex';
+    hexLabel.textContent = hex.toUpperCase();
+
+    row.appendChild(wrap);
+    row.appendChild(label);
+    row.appendChild(hexLabel);
+    tcModalBody.appendChild(row);
+  }
+  tcModal.classList.add('open');
+  tcModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeTrackColorsModal() {
+  tcModal.classList.remove('open');
+  tcModal.setAttribute('aria-hidden', 'true');
+}
+
+function resetTrackColors() {
+  let colIdx = 0;
+  for (const tIdx of trackColorMap.keys()) {
+    trackColorMap.set(tIdx, CONSTANTS.TRACK_COLORS[colIdx++ % CONSTANTS.TRACK_COLORS.length]);
+  }
+  rebuildLegend();
+  openTrackColorsModal(); // refresh rows
 }
 
 // ── Player callbacks ─────────────────────────────────────────
@@ -437,6 +526,25 @@ btnImport.addEventListener('click', () => fileInput.click());
 
 btnBg.addEventListener('click', openBgModal);
 btnBgClose.addEventListener('click', closeBgModal);
+
+// Grid toggle
+btnToggleGrid.classList.toggle('active', window.SHOW_GRID);
+btnToggleGrid.addEventListener('click', () => {
+  window.SHOW_GRID = !window.SHOW_GRID;
+  localStorage.setItem('webpiano.showGrid', window.SHOW_GRID);
+  btnToggleGrid.classList.toggle('active', window.SHOW_GRID);
+});
+
+// Track colors modal
+btnTrackColors.addEventListener('click', openTrackColorsModal);
+btnTcClose.addEventListener('click', closeTrackColorsModal);
+btnTcReset.addEventListener('click', resetTrackColors);
+tcModal.addEventListener('click', (e) => {
+  if (e.target && e.target.dataset && e.target.dataset.close === '1') closeTrackColorsModal();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && tcModal.classList.contains('open')) closeTrackColorsModal();
+});
 bgModal.addEventListener('click', (e) => {
   if (e.target && e.target.dataset && e.target.dataset.close === '1') closeBgModal();
 });
