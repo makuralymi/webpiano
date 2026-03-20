@@ -234,6 +234,35 @@ const DEFAULT_MIDI = '';
 
 ---
 
+## Playlist 播放列表
+
+项目支持自动加载 `playlist/` 文件夹中的 MIDI 文件。
+
+### 添加新曲目
+
+1. 将 `.mid` 或 `.midi` 文件放入 `playlist/` 文件夹
+2. 运行生成脚本更新索引：
+   ```bash
+   node generate-playlist.js
+   ```
+3. 刷新页面，新曲目会出现在播放列表中
+
+### 静态部署说明
+
+静态托管平台（Cloudflare Pages、GitHub Pages 等）不支持动态 API，因此需要 `playlist/playlist.json` 文件：
+
+- **本地开发**：使用 Node.js 服务器时，会自动通过 `/api/playlist` 读取
+- **静态部署**：优先读取 `playlist/playlist.json`（需预先生成）
+
+**部署前务必运行**：
+```bash
+node generate-playlist.js
+```
+
+这将扫描 `playlist/` 文件夹并生成 `playlist.json`，确保部署后播放列表正常加载。
+
+---
+
 ## 全局配置（constants.js）
 
 | 常量 | 默认值 | 说明 |

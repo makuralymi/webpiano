@@ -237,8 +237,13 @@ async function loadPlaylistItemByIndex(idx, onlyIfNoMidiLoaded) {
 
 async function loadPlaylistFromServer() {
   try {
-    const resp = await fetch('./api/playlist');
-    if (!resp.ok) throw new Error('playlist api failed');
+    // Try static JSON first (for static deployments like Cloudflare Pages)
+    let resp = await fetch('./playlist/playlist.json');
+    if (!resp.ok) {
+      // Fallback to API endpoint (for local Node.js server)
+      resp = await fetch('./api/playlist');
+    }
+    if (!resp.ok) throw new Error('playlist failed');
     const data = await resp.json();
     playlistItems = Array.isArray(data.files) ? data.files : [];
   } catch (_) {
