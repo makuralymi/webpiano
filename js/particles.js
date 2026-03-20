@@ -111,9 +111,24 @@ class ParticleSystem {
   constructor() {
     this._particles = [];
     this._smoke     = [];
+    // Dynamic particle management thresholds
+    this._maxParticles = 500;      // Soft limit for normal particles
+    this._maxSmoke = 200;          // Soft limit for smoke particles
+    this._criticalThreshold = 0.8; // Start aggressive cleanup at 80% capacity
+    this._decayMultiplier = 1.0;   // Global decay speed multiplier
+    this._lastFrameTime = performance.now();
+    this._frameTime = 16.67;       // Target 60fps
   }
 
   burst(x, y, colors, count = 28) {
+    // Throttle particle creation if approaching limits
+    const particleLoad = this._particles.length / this._maxParticles;
+    if (particleLoad > 0.9) {
+      count = Math.floor(count * (1 - particleLoad) * 10); // Drastically reduce
+    } else if (particleLoad > 0.7) {
+      count = Math.floor(count * 0.5); // Reduce by half
+    }
+    
     for (let i = 0; i < count; i++) {
       const c = colors[Math.floor(Math.random() * colors.length)];
       this._particles.push(new Particle(x, y, c, i < 8));
@@ -121,19 +136,76 @@ class ParticleSystem {
   }
 
   smokeBurst(x, y, color, count = 7) {
+    // Throttle smoke creation if approaching limits
+    const smokeLoad = this._smoke.length / this._maxSmoke;
+    if (smokeLoad > 0.9) {
+      count = Math.floor(count * (1 - smokeLoad) * 10);
+    } else if (smokeLoad > 0.7) {
+      count = Math.floor(count * 0.5);
+    }
+    
     for (let i = 0; i < count; i++)
       this._smoke.push(new SmokeParticle(x, y, color));
   }
 
   update() {
+    // Measure frame time for performance-based adjustments
+    const now = performance.now();
+    const dt = now - this._lastFrameTime;
+    this._lastFrameTime = now;
+    this._frameTime = this._frameTime * 0.9 + dt * 0.1; // Smooth average
+    
+    // Calculate load factors
+    const particleLoad = this._particles.length / this._maxParticles;
+    const smokeLoad = this._smoke.length / this._maxSmoke;
+    const maxLoad = Math.max(particleLoad, smokeLoad);
+    
+    // Adjust decay multiplier based on load and performance
+    if (maxLoad > this._criticalThreshold || this._frameTime > 20) {
+      // Over threshold or dropping below 50fps → speed up decay
+      const overload = Math.max(maxLoad - this._criticalThreshold, 0) / (1 - this._criticalThreshold);
+      const perfPenalty = Math.max((this._frameTime - 16.67) / 16.67, 0);
+      this._decayMultiplier = 1.0 + overload * 3.0 + perfPenalty * 2.0;
+    } else if (maxLoad < 0.3 && this._frameTime < 18) {
+      // Low load and good performance → gradually restore normal decay
+      this._decayMultiplier = Math.max(1.0, this._decayMultiplier * 0.95);
+    }
+    
+    // Update particles with dynamic decay
     for (let i = this._particles.length - 1; i >= 0; i--) {
-      this._particles[i].update();
-      if (this._particles[i].life <= 0) this._particles.splice(i, 1);
+      const p = this._particles[i];
+      p.update();
+      // Apply dynamic decay multiplier
+      p.life -= p.decay * (this._decayMultiplier - 1);
+      if (p.life <= 0) this._particles.splice(i, 1);
     }
+    
+    // Update smoke with dynamic decay
     for (let i = this._smoke.length - 1; i >= 0; i--) {
-      this._smoke[i].update();
-      if (this._smoke[i].life <= 0) this._smoke.splice(i, 1);
+      const s = this._smoke[i];
+      s.update();
+      // Apply dynamic decay multiplier
+      s.life -= s.decay * (this._decayMultiplier - 1);
+      if (s.life <= 0) this._smoke.splice(i, 1);
     }
+    
+    // Emergency cleanup if still over limits
+    if (this._particles.length > this._maxParticles * 1.2) {
+      this._emergencyCleanup(this._particles, this._maxParticles);
+    }
+    if (this._smoke.length > this._maxSmoke * 1.2) {
+      this._emergencyCleanup(this._smoke, this._maxSmoke);
+    }
+  }
+  
+  _emergencyCleanup(array, targetCount) {
+    // Remove oldest/weakest particles if critically over limit
+    if (array.length <= targetCount) return;
+    
+    // Sort by life (weakest first) and remove excess
+    array.sort((a, b) => a.life - b.life);
+    const toRemove = array.length - targetCount;
+    array.splice(0, toRemove);
   }
 
   draw(ctx) {
@@ -164,7 +236,29 @@ class ParticleSystem {
     ctx.restore();
   }
 
-  clear() { this._particles = []; this._smoke = []; }
+  clear() { 
+    this._particles = []; 
+    this._smoke = []; 
+    this._decayMultiplier = 1.0;
+  }
+  
+  // Diagnostic methods
+  getStats() {
+    return {
+      particles: this._particles.length,
+      smoke: this._smoke.length,
+      total: this._particles.length + this._smoke.length,
+      decayMultiplier: this._decayMultiplier.toFixed(2),
+      frameTime: this._frameTime.toFixed(1),
+      particleLoad: (this._particles.length / this._maxParticles * 100).toFixed(0) + '%',
+      smokeLoad: (this._smoke.length / this._maxSmoke * 100).toFixed(0) + '%'
+    };
+  }
+  
+  setLimits(maxParticles, maxSmoke) {
+    this._maxParticles = maxParticles;
+    this._maxSmoke = maxSmoke;
+  }
 }
 
 window.ParticleSystem = ParticleSystem;
